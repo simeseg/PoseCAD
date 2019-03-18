@@ -1,4 +1,4 @@
-//#ifndef EUCLIDEANCLUSTER_H_INCLUDED
+#ifndef EUCLIDEANCLUSTER_H_INCLUDED
 #define EUCLIDEANCLUSTER_H_INCLUDED
 
 //declaration of Eulidean clustering
