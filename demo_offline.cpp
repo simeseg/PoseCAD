@@ -94,8 +94,7 @@ int main(int argc, char * argv[])
         grid_object.filter (*object);
 
         //load frame
-      boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud;
-      cloud = rsGrabber();
+      boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud; cloud = object;
 
       //cloud->sensor_orientation_.w() = 0.0;
       //cloud->sensor_orientation_.x() = 1.0;
@@ -116,7 +115,6 @@ int main(int argc, char * argv[])
       while(!viewer->wasStopped()){
 
         viewer->spinOnce ();
-        k2g.get(color, depth, cloud);
         // Showing only color since depth is float and needs conversion
         int c = cv::waitKey(1);
 
@@ -166,10 +164,10 @@ int main(int argc, char * argv[])
             pcl::PointCloud<pcl::PointXYZ>::Ptr cluster_copy (new pcl::PointCloud<pcl::PointXYZ>);
             pcl::copyPointCloud(cluster.at(it), *cluster_copy);
 
-            //pcl::PointCloud<pcl::PointNormal>::Ptr cluster_keypoints = detectKeypoints(*object, min_scale, n_octaves, n_scales_per_octave, min_contrast);
+            pcl::PointCloud<pcl::PointNormal>::Ptr cluster_keypoints = detectKeypoints(*object, min_scale, n_octaves, n_scales_per_octave, min_contrast);
             std::stringstream ss;
             ss << "keypoints for cluster " << it;
-/*
+
             Eigen::Matrix4f transform;
             transform = SAC_cluster(cluster.at(it), *object);
 
@@ -180,21 +178,18 @@ int main(int argc, char * argv[])
             pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> gicp;
             gicp.setInputSource(object_aligned);
             gicp.setInputTarget(cluster_copy);
-            //gicp.setMaxCorrespondenceDistance(0.015);//gicp.setTransformationEpsilon(1e-3);
+            gicp.setMaxCorrespondenceDistance(0.015);//gicp.setTransformationEpsilon(1e-3);
             gicp.setMaximumIterations(500);
             pcl::PointCloud<pcl::PointXYZ>::Ptr Final (new pcl::PointCloud<pcl::PointXYZ>); gicp.align(*Final);
-
             std::cout << " ICP has converged:" << gicp.hasConverged() << " score: " <<
             gicp.getFitnessScore() ;
-            //std::cout << gicp.getFinalTransformation() << std::endl;
-*/
 
             viewer->addPointCloud<pcl::PointXYZ> (cluster_copy, pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> (cluster_copy, rand() % 255, rand() % 255, rand() % 255), ss.str());
-            //viewer->addPointCloud<pcl::PointNormal> (cluster_keypoints, ColorHandlerT (cluster_keypoints, rand() % 255, rand() % 255, rand() % 255), ss.str());
-            //viewer->addPointCloud<pcl::PointNormal> (cluster_keypoints, ColorHandlerT (cluster_keypoints, 255, 0, 0), ss.str());
-            //viewer->addPointCloud<pcl::PointXYZ> (object, pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> (object, 0, 255, 0), "object");
+            viewer->addPointCloud<pcl::PointNormal> (cluster_keypoints, ColorHandlerT (cluster_keypoints, rand() % 255, rand() % 255, rand() % 255), ss.str());
+            viewer->addPointCloud<pcl::PointNormal> (cluster_keypoints, ColorHandlerT (cluster_keypoints, 255, 0, 0), ss.str());
+            viewer->addPointCloud<pcl::PointXYZ> (object, pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> (object, 0, 255, 0), "object");
             viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, ss.str());
-            //viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "object");
+            viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "object");
         }
         viewer->addPointCloud<pcl::PointXYZRGB> (cloud, rgb, "sample cloud");
         cv::resize(color, color, cv::Size(1080, 840));
