@@ -1,6 +1,10 @@
-#include <pcl/visualization/cloud_viewer.h>
+
 #include <chrono>
 #include <sys/time.h>
+#include <Eigen/Core>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/visualization/cloud_viewer.h>
 
 // extra headers for writing out ply file
 #include <pcl/console/print.h>
@@ -20,36 +24,22 @@
 #include <pcl/surface/poisson.h>
 #include <pcl/surface/gp3.h>
 #include <pcl/filters/passthrough.h>
-
-#include <pcl/common/time.h>
-#include <pcl/console/print.h>
-#include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/fpfh_omp.h>
 
+//registration headers
 #include <pcl/registration/icp.h>
 #include <pcl/registration/sample_consensus_prerejective.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
-#include <Eigen/Core>
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
-#include <pcl/common/time.h>
-#include <pcl/console/print.h>
-#include <pcl/features/normal_3d_omp.h>
-#include <pcl/features/fpfh_omp.h>
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/approximate_voxel_grid.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/registration/gicp.h>
 #include <pcl/registration/ia_ransac.h>
-#include <pcl/registration/sample_consensus_prerejective.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/keypoints/sift_keypoint.h>
 #include <pcl/io/vtk_lib_io.h>
+
 #ifdef WITH_SERIALIZATION
 #include "serialization.h"
 #endif
@@ -69,31 +59,31 @@ typedef pcl::PointCloud<FeatureT> FeatureCloudT;
 typedef pcl::visualization::PointCloudColorHandlerCustom<PointNT> ColorHandlerT;
 
 
-
 // Aligning a rigid scene with clutter and clustering
 
 
 using namespace pcl;
 
-
 int main(int argc, char * argv[])
 {
 
       srand (time(NULL));
-
-      // Load object
+      
+        // Load object
         pcl::PointCloud<pcl::PointXYZ>::Ptr object (new pcl::PointCloud<pcl::PointXYZ>);
         pcl::console::print_highlight ("Loading object point clouds...\n");
-        if (pcl::io::loadPCDFile<pcl::PointXYZ> ("hexagon_model.pcd", *object) < 0 )
+        if (pcl::io::loadPCDFile<pcl::PointXYZ> (argv[1], *object) < 0 )
         {
           pcl::console::print_error ("Error loading object/scene file!\n");
           return (1);
         }
 
-      //load CAD
-        pcl::PolygonMesh mesh7;
-        pcl::io::loadPolygonFileOBJ("Hexagon.obj", mesh7);
-        //pcl::io::loadOBJFile("3DScan_test3a.obj", mesh7);
+        //load CAD
+        pcl::PolygonMesh mesh7; //pcl::io::loadOBJFile("3DScan_test3a.obj", mesh7);
+        if(pcl::io::loadPolygonFileOBJ(argv[2], mesh7) < 0 ) {
+              pcl::console::print_error ("Error loading CAD mesh file \n ");
+              
+        }
 
         // Downsample object and convert to PointNT cloud
         pcl::console::print_highlight ("Downsampling...\n");
@@ -104,7 +94,6 @@ int main(int argc, char * argv[])
         grid_object.filter (*object);
 
         //load frame
-
       boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud;
       cloud = rsGrabber();
 
@@ -144,7 +133,7 @@ int main(int argc, char * argv[])
         filter.filter(*cloud);
         //pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
 
-
+        //remove outliers
         pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
         sor.setInputCloud(cloud);
         sor.setMeanK(50);
@@ -159,9 +148,8 @@ int main(int argc, char * argv[])
         grid.setInputCloud (cloud);
         grid.filter (*filtered_cloud);
 
-
+        //cluster
         pcl::copyPointCloud(*filtered_cloud,*scene_tmp);
-
         std::vector<pcl::PointCloud<pcl::PointXYZ>> cluster;
 
         cluster = EuclideanCluster(scene_tmp);
@@ -173,6 +161,7 @@ int main(int argc, char * argv[])
         const int n_scales_per_octave = 8;//8
         const float min_contrast = 0.00f;//0.003
         viewer->removeAllPointClouds();
+            
         for(unsigned it = 0; it<cluster.size();it++ ){
             pcl::PointCloud<pcl::PointXYZ>::Ptr cluster_copy (new pcl::PointCloud<pcl::PointXYZ>);
             pcl::copyPointCloud(cluster.at(it), *cluster_copy);
@@ -213,6 +202,5 @@ int main(int argc, char * argv[])
         //viewer->addPolygonMesh(mesh7);
       }
 
-      k2g.shutDown();
-      return 0;
+      return EXIT_SUCCESS;
 }
