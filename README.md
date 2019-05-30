@@ -1,6 +1,3 @@
 Object Recognition and Pose Estimation of Objects based on CAD file 
 
-Requires:
-
-librealsense2 
-pcl 
+Requires: librealsense2, PCL 
